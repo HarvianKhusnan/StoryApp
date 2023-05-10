@@ -1,0 +1,21 @@
+<resources>
+    <string name="app_name">StoryApp</string>
+    <string name="settings">Settings</string>
+    <string name="mail_hint">Email</string>
+    <string name="hint_string">Password</string>
+    <string name="password_msg_empty">Password tidak  boleh kosong</string>
+    <string name="password_length">Password harus lebih dari 8 kata!</string>
+    <string name="mail_input">Masukkan email</string>
+    <string name="mail_msg">Email tidak boleh kosong</string>
+    <string name="mail_msg_error">Masukkan email/Email salah</string>
+    <string name="register_typebtn">Register</string>
+    <string name="login_typebtn">Login</string>
+    <string name="Welcome_type">Selamat Datang</string>
+    <string name="login_type">Login</string>
+    <string name="wrong_input">Gagal Login, Email / password salah!</string>
+    <string name="title_activity_main">MainActivity</string>
+    <string name="request_denied">Request Di tolak/ tidak dapat izin</string>
+    <string name="picture_firs">Masukkan gambar dulu</string>
+    <string name="title_activity_maps">MapsActivity</string>
+    <string name="location">Location Activity</string>
+</resources>

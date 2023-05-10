@@ -1,0 +1,101 @@
+<?xml version="1.0" encoding="utf-8"?>
+<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent">
+
+    <androidx.constraintlayout.widget.ConstraintLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:paddingVertical="32dp"
+        tools:context=".ui.StoryAddActivity">
+
+        <ImageView
+            android:id="@+id/img_story"
+            android:layout_width="262dp"
+            android:layout_height="263dp"
+            android:layout_marginTop="44dp"
+            android:background="@drawable/button_bg_outline"
+            android:clickable="true"
+            android:padding="1dp"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintHorizontal_bias="0.496"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toTopOf="parent"
+            tools:src="@tools:sample/avatars" />
+
+        <androidx.appcompat.widget.AppCompatButton
+            android:id="@+id/btn_camera_add"
+            android:layout_width="125dp"
+            android:layout_height="45dp"
+            android:layout_marginStart="12dp"
+            android:layout_marginTop="32dp"
+            android:background="@drawable/button_bg_pink"
+            android:fontFamily="@font/poppins_medium"
+            android:text="camera"
+            android:textColor="@color/white"
+            app:layout_constraintEnd_toStartOf="@+id/btn_gallery_add"
+            app:layout_constraintHorizontal_bias="0.0"
+            app:layout_constraintStart_toStartOf="@+id/img_story"
+            app:layout_constraintTop_toBottomOf="@+id/img_story" />
+
+        <androidx.appcompat.widget.AppCompatButton
+            android:id="@+id/btn_gallery_add"
+            android:layout_width="112dp"
+            android:layout_height="44dp"
+            android:layout_marginTop="32dp"
+            android:layout_marginEnd="4dp"
+            android:background="@drawable/button_bg_pink"
+            android:fontFamily="@font/poppins_medium"
+            android:text="Gallery"
+            android:textColor="@color/white"
+            app:layout_constraintEnd_toEndOf="@+id/img_story"
+            app:layout_constraintTop_toBottomOf="@+id/img_story" />
+
+        <EditText
+            android:id="@+id/edit_desc"
+            android:layout_width="263dp"
+            android:layout_height="81dp"
+            android:layout_marginTop="28dp"
+            android:background="@drawable/edittext_bg"
+            android:gravity="top"
+            android:hint="description"
+            android:inputType="textMultiLine"
+            android:lines="2"
+            android:maxLines="2"
+            android:padding="16dp"
+            app:layout_constraintEnd_toEndOf="@+id/img_story"
+            app:layout_constraintHorizontal_bias="0.486"
+            app:layout_constraintStart_toStartOf="@+id/img_story"
+            app:layout_constraintTop_toBottomOf="@+id/btn_camera_add" />
+
+        <androidx.appcompat.widget.AppCompatButton
+            android:id="@+id/btn_upload"
+            android:layout_width="247dp"
+            android:layout_height="56dp"
+            android:layout_marginTop="16dp"
+            android:background="@color/teal_200"
+            android:fontFamily="@font/poppins_medium"
+            android:text="upload"
+            android:textAlignment="center"
+            android:textColor="@color/white"
+            app:layout_constraintEnd_toEndOf="@+id/edit_desc"
+            app:layout_constraintStart_toStartOf="@+id/edit_desc"
+            app:layout_constraintTop_toBottomOf="@+id/edit_desc" />
+
+        <androidx.appcompat.widget.AppCompatButton
+            android:id="@+id/btn_upload_guest"
+            android:layout_width="247dp"
+            android:layout_height="56dp"
+            android:layout_marginTop="16dp"
+            android:background="@color/teal_200"
+            android:fontFamily="@font/poppins_medium"
+            android:text="upload as guest"
+            android:textAlignment="center"
+            android:textColor="@color/white"
+            app:layout_constraintEnd_toEndOf="@+id/edit_desc"
+            app:layout_constraintStart_toStartOf="@+id/edit_desc"
+            app:layout_constraintTop_toBottomOf="@+id/btn_upload" />
+    </androidx.constraintlayout.widget.ConstraintLayout>
+</ScrollView>
