@@ -80,7 +80,6 @@ class CameraActivity : AppCompatActivity(), View.OnClickListener {
                 override fun onError(exception: ImageCaptureException) {
                     Toast.makeText(this@CameraActivity, "Error", Toast.LENGTH_SHORT).show()
                 }
-
                 override fun onImageSaved(outputFileResults: ImageCapture.OutputFileResults) {
                     val intent = Intent().apply {
                         putExtra("picture",filePhoto)

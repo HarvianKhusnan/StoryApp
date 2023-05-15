@@ -1,14 +1,17 @@
 package com.example.storyapp.adapter
 
 import android.view.LayoutInflater
+import android.view.ScrollCaptureCallback
 import android.view.ViewGroup
+import androidx.paging.PagingDataAdapter
+import androidx.recyclerview.widget.DiffUtil
 import androidx.recyclerview.widget.RecyclerView
 import com.example.storyapp.databinding.ItemListBinding
 import com.example.storyapp.response.Story
 import com.example.storyapp.ui.MainActivity
 import com.example.storyapp.utils.loadImage
 
-class AdapterStory(private val callback: MainActivity) : RecyclerView.Adapter<AdapterStory.StoryViewHolder>() {
+class AdapterStory (diffCallback: DiffUtil.ItemCallback<Story>, private val callback: CallbackStory): PagingDataAdapter<Story,AdapterStory.StoryViewHolder>(diffCallback){
     private val data = ArrayList<Story>()
 
     fun dataSet(story : ArrayList<Story>){

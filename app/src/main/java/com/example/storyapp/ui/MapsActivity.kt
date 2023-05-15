@@ -46,19 +46,9 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback {
         mMap.uiSettings.isCompassEnabled = true
         mMap.uiSettings.isMapToolbarEnabled = true
 
-        storyList = intent.getParcelableArrayListExtra(MainActivity.KEY_LIST_MAP)
-        mapNameList = intent.getStringArrayListExtra(MainActivity.LIST_MAP_NAME)
-        for(storyMap in storyList!!.indices){
-            mMap.addMarker(
-                MarkerOptions()
-                    .position(storyList!![storyMap])
-                    .title(mapNameList!![storyMap])
-            )
-            mMap.animateCamera(CameraUpdateFactory.zoomTo(18.0f))
-            mMap.moveCamera(CameraUpdateFactory.newLatLng(storyList!![storyMap]))
-        }
-
         getMyLocation()
+        mylocation()
+        userMarker()
     }
 
     private val requestPermissionlauncher =
@@ -68,7 +58,6 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback {
             if(isGranted){
                 getMyLocation()
             }
-
         }
 
     private fun getMyLocation(){
@@ -81,6 +70,31 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback {
         }else{
             requestPermissionlauncher.launch(android.Manifest.permission.ACCESS_FINE_LOCATION)
         }
+    }
+
+    private fun userMarker(){
+        storyList = intent.getParcelableArrayListExtra(MainActivity.KEY_LIST_MAP)
+        mapNameList = intent.getStringArrayListExtra(MainActivity.LIST_MAP_NAME)
+
+        for(storyMap in storyList!!.indices){
+            mMap.addMarker(
+                MarkerOptions()
+                    .position(storyList!![storyMap])
+                    .title(mapNameList!![storyMap])
+            )
+            mMap.animateCamera(CameraUpdateFactory.zoomTo(15.0f))
+            mMap.moveCamera(CameraUpdateFactory.newLatLng(storyList!![storyMap]))
+        }
+    }
+    private fun mylocation(){
+        val kostPuri = LatLng(-6.976541, 107.633819)
+        mMap.addMarker(
+            MarkerOptions()
+                .title("Kost gwe")
+                .position(kostPuri)
+                .snippet("Sukabirus")
+        )
+        mMap.animateCamera(CameraUpdateFactory.newLatLngZoom(kostPuri, 15f))
     }
 
 }

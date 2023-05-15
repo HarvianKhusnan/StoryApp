@@ -1,36 +1,49 @@
 package com.example.storyapp.ui
 
+import android.content.ContentValues.TAG
 import android.content.Context
 import android.content.Intent
 import androidx.appcompat.app.AppCompatActivity
 import android.os.Bundle
+import android.util.Log
 import android.view.Menu
 import android.view.MenuItem
 import android.view.View
 import android.widget.Toast
+import androidx.activity.viewModels
 import androidx.core.util.Pair
 import androidx.core.app.ActivityOptionsCompat
 import androidx.datastore.core.DataStore
 import androidx.datastore.preferences.preferencesDataStore
 import com.example.storyapp.R
 import androidx.datastore.preferences.core.Preferences
+import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
+import androidx.lifecycle.lifecycleScope
+import androidx.lifecycle.viewmodel.viewModelFactory
+import androidx.paging.PagingData
 import androidx.recyclerview.widget.LinearLayoutManager
 import com.example.storyapp.adapter.AdapterStory
+import com.example.storyapp.api.ApiConfig
+import com.example.storyapp.api.ApiService
+import com.example.storyapp.data.RepositoryStory
+import com.example.storyapp.data.StoryComparator
 import com.example.storyapp.databinding.ActivityMainBinding
 import com.example.storyapp.databinding.ItemListBinding
 import com.example.storyapp.response.Story
 import com.example.storyapp.utils.Resource
 import com.example.storyapp.utils.UserPreferences
 import com.example.storyapp.viewmodel.MainViewModel
+import com.example.storyapp.viewmodel.StoryAddViewModel
 import com.example.storyapp.viewmodel.ViewModelFactory
 import com.google.android.gms.maps.model.LatLng
 import com.google.android.material.floatingactionbutton.FloatingActionButton
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
 
-class MainActivity : AppCompatActivity() {
+class MainActivity : AppCompatActivity(), AdapterStory.CallbackStory{
 
     companion object {
         const val KEY_LIST_MAP = "MAPS"
@@ -41,15 +54,17 @@ class MainActivity : AppCompatActivity() {
     private val Context.dataStore: DataStore<Preferences> by preferencesDataStore(name= "user_key")
     private var binding: ActivityMainBinding? = null
     private val getBinding get() = binding!!
-    private val storyAdapter = AdapterStory(this)
+    private var storyAdapter = AdapterStory(StoryComparator, this)
     private lateinit var viewModel: MainViewModel
-
-
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         binding = ActivityMainBinding.inflate(layoutInflater)
         setContentView(getBinding.root)
+
+        storyList = ArrayList<LatLng>()
+        mapNameList = ArrayList<String>()
+
 
         val fab = findViewById<FloatingActionButton>(R.id.fab)
         fab.setOnClickListener {
@@ -62,20 +77,31 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun setup(){
+        storyAdapter = AdapterStory(StoryComparator, this)
         recyclerView()
     }
 
     private fun viewModel(){
         val preferences = UserPreferences.getInstances(dataStore)
-        val viewModelFac = ViewModelFactory(preferences)
+        val storyRepo = RepositoryStory(ApiConfig.apiInstance)
+        val viewModelFac = ViewModelFactory(preferences, storyRepo)
         viewModelFac.setApp(application)
 
         viewModel = ViewModelProvider(this, viewModelFac)[MainViewModel::class.java]
         viewModel.story.observe(this){
             when(it){
                 is Resource.forSucces -> {
-                    it.data?.let { stories -> storyAdapter.dataSet(stories)  }
+                  it.data?.let { stories -> storyAdapter.dataSet(stories)  }
                     loading(false)
+                    if(it.data != null) {
+                        storyList!!.addAll(it.data.map { story -> LatLng(story.lat, story.lon) })
+                        mapNameList!!.addAll(it.data.map { story -> story.name })
+                    }
+                    lifecycleScope.launch {
+                        viewModel.pagingStory().observe(this@MainActivity){story ->
+                            storyAdapter.submitData(lifecycle,story)
+                        }
+                    }
                 }
                 is Resource.Loading -> loading(true)
                 is Resource.forError -> {
@@ -84,22 +110,18 @@ class MainActivity : AppCompatActivity() {
                 }
             }
         }
-        viewModel.getStory().observe(this) {
-            if (it != null) {
-                for (stori in it.indices) {
-                    storyList!!.add(LatLng(it[stori].lat, it[stori].lon))
-                    mapNameList!!.add(it[stori].name.toString())
-                }
-            }
-        }
         getData()
     }
 
     private fun recyclerView(){
         with(getBinding.storyRv){
-            setHasFixedSize(true)
             layoutManager = LinearLayoutManager(this@MainActivity)
             adapter = storyAdapter
+        }
+        lifecycleScope.launch {
+            viewModel.pagingStory().observe(this@MainActivity){story ->
+                storyAdapter.submitData(lifecycle,story)
+            }
         }
     }
 
@@ -111,6 +133,7 @@ class MainActivity : AppCompatActivity() {
         CoroutineScope(Dispatchers.IO).launch {
             viewModel.stories()
             viewModel.getStory()
+            viewModel.pagingStory()
         }
     }
 
@@ -150,7 +173,7 @@ class MainActivity : AppCompatActivity() {
     }
 
 
-    fun onStoryClick(story: Story, itemListBinding: ItemListBinding) {
+    override fun onStoryClick(story: Story, itemListBinding: ItemListBinding) {
         val compat: ActivityOptionsCompat =
             ActivityOptionsCompat.makeSceneTransitionAnimation(
                 this,
@@ -162,3 +185,4 @@ class MainActivity : AppCompatActivity() {
         startActivity(intentDetail, compat.toBundle())
     }
 }
+

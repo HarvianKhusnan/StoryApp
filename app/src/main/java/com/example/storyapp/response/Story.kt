@@ -13,7 +13,7 @@ data class Story(
     @SerializedName("id")
     val id:String,
     @SerializedName("name")
-    val name: String?,
+    val name: String,
     @SerializedName("description")
     val descript: String?,
     @SerializedName("photoUrl")

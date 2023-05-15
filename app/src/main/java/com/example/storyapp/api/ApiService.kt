@@ -8,10 +8,10 @@ import retrofit2.http.*
 
 interface ApiService {
     @POST("register")
-    fun registerUser(@Body request: RequestRegister) : Call<ResponsesBaseAll>
+    fun registerUser(@Body request: RequestRegister) : Call <ResponsesBaseAll>
 
     @POST("login")
-    fun loginUser(@Body requestLogin: RequestLogin) : Call<LoginResponse>
+    fun loginUser(@Body requestLogin: RequestLogin) : Call <LoginResponse>
 
     @Multipart
     @POST("stories")
@@ -19,11 +19,11 @@ interface ApiService {
         @Header("Authorization") token: String,
         @Part file: MultipartBody.Part,
         @Part("description") description: RequestBody,
-    ): Call<ResponsesBaseAll>
+    ): Call <ResponsesBaseAll>
 
     @Multipart
     @POST("stories/guest")
-    fun addStoryForGuest(
+   suspend fun addStoryForGuest(
         @Part file: MultipartBody.Part,
         @Part("description") description: RequestBody,
     ): Call<ResponsesBaseAll>
@@ -34,4 +34,10 @@ interface ApiService {
         @Query("page") page: Int? = null,
         @Query("size") size: Int? = null
     ): Call<StoryResponse>
+    @GET("stories")
+    fun storiesGet(
+        @Header("Authorization") token: String,
+        @Query("page") page: Int? = null,
+        @Query("size") size: Int? = null
+    ): StoryResponse
 }
