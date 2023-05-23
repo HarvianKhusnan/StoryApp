@@ -3,41 +3,51 @@ package com.example.storyapp.api
 import com.example.storyapp.response.*
 import okhttp3.MultipartBody
 import okhttp3.RequestBody
-import retrofit2.Call
 import retrofit2.http.*
 
 interface ApiService {
+    @FormUrlEncoded
     @POST("register")
-    fun registerUser(@Body request: RequestRegister) : Call <ResponsesBaseAll>
-
+    suspend fun registerUser(
+        @Field("name") name: String,
+        @Field("email") mail : String,
+        @Field("password") pw : String,
+    ) : ResponsesBaseAll
+    @FormUrlEncoded
     @POST("login")
-    fun loginUser(@Body requestLogin: RequestLogin) : Call <LoginResponse>
+   suspend fun loginUser(
+        @Field("email") email: String,
+        @Field("password") pw : String
+    ) : LoginResponse
 
     @Multipart
     @POST("stories")
-    fun addStory(
+    suspend fun addStory(
         @Header("Authorization") token: String,
         @Part file: MultipartBody.Part,
         @Part("description") description: RequestBody,
-    ): Call <ResponsesBaseAll>
+        @Part("lat") latitude: RequestBody?,
+        @Part("lon") longitude: RequestBody?
+    ): ResponsesBaseAll
 
     @Multipart
     @POST("stories/guest")
    suspend fun addStoryForGuest(
         @Part file: MultipartBody.Part,
         @Part("description") description: RequestBody,
-    ): Call<ResponsesBaseAll>
+    ): ResponsesBaseAll
+
+   @GET("stories")
+   fun locationAll (
+       @Query("location") location: String,
+       @Query("page") page: Int,
+   ): StoryResponse
 
     @GET("stories")
-    fun getForStories(
+   suspend fun getForStories(
         @Header("Authorization") token: String,
-        @Query("page") page: Int? = null,
-        @Query("size") size: Int? = null
-    ): Call<StoryResponse>
-    @GET("stories")
-    fun storiesGet(
-        @Header("Authorization") token: String,
-        @Query("page") page: Int? = null,
-        @Query("size") size: Int? = null
+        @Query("page") page: Int,
+        @Query("size") size: Int,
+        @Query("location") location: Int? = null,
     ): StoryResponse
 }

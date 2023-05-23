@@ -5,204 +5,211 @@ import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageManager
 import android.graphics.BitmapFactory
+import android.location.Location
 import android.net.Uri
 import android.os.Bundle
+import android.provider.MediaStore
 import android.view.MenuItem
 import android.view.View
 import android.widget.ImageView
 import android.widget.Toast
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.activity.viewModels
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
+import androidx.core.content.FileProvider
 import androidx.datastore.core.DataStore
 import androidx.datastore.preferences.core.Preferences
 import androidx.datastore.preferences.preferencesDataStore
 import androidx.lifecycle.ViewModelProvider
+import androidx.lifecycle.viewmodel.viewModelFactory
 import com.example.storyapp.R
+import com.example.storyapp.api.ApiConfig
+import com.example.storyapp.api.ApiService
+import com.example.storyapp.data.RepositoryStory
 import com.example.storyapp.databinding.ActivityStoryAddBinding
 import com.example.storyapp.utils.*
 import com.example.storyapp.viewmodel.StoryAddViewModel
 import com.example.storyapp.viewmodel.ViewModelFactory
+import com.google.android.gms.location.FusedLocationProviderClient
+import com.google.android.gms.location.LocationServices
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.MediaType.Companion.toMediaTypeOrNull
 import okhttp3.MultipartBody
+import okhttp3.RequestBody
 import okhttp3.RequestBody.Companion.asRequestBody
 import okhttp3.RequestBody.Companion.toRequestBody
 import java.io.File
 
-class StoryAddActivity : AppCompatActivity(), View.OnClickListener {
-    private val Context.dataStore: DataStore<Preferences> by preferencesDataStore(name="user_key")
-    private var binding: ActivityStoryAddBinding? = null
-    private val getBinding get() = binding!!
-    private var zoomImage = true
-    private var fileGet: File? = null
-    private lateinit var viewModelAddStory: StoryAddViewModel
+class StoryAddActivity : AppCompatActivity(){
 
-     companion object {
-         const val CAMERA_X_RESULT = 200
-         private val REQUIRED_PERMISSIONS = arrayOf(Manifest.permission.CAMERA)
-         private const val REQUEST_CODE_PERMISSIONS = 10
-     }
+    private lateinit var binding: ActivityStoryAddBinding
+    private lateinit var photoPath: String
+    private lateinit var fusedLocationProviderClient: FusedLocationProviderClient
+    private var loct : Location? = null
+    private var file : File? = null
+    private val viewModel: StoryAddViewModel by viewModels {
+        ViewModelFactory.instance(this)
+    }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         binding = ActivityStoryAddBinding.inflate(layoutInflater)
-        setContentView(getBinding.root)
+        setContentView(binding.root)
+        fusedLocationProviderClient = LocationServices.getFusedLocationProviderClient(this)
 
-        supportActionBar?.setDisplayHomeAsUpEnabled(true)
-
-        val requestPermissionLauncher =
-            registerForActivityResult(
-                ActivityResultContracts.RequestPermission()
-            ) { isGranted: Boolean ->
-                if (!isGranted) {
-                    ActivityCompat.requestPermissions(
-                        this, REQUIRED_PERMISSIONS, REQUEST_CODE_PERMISSIONS
-                    )
-                }
-            }
-
-        if(!allPermissionsGranted()){
-//            ActivityCompat.requestPermissions(this, REQUIRED_PERMISSIONS, REQUEST_CODE_PERMISSIONS)
-            requestPermissionLauncher.launch(REQUIRED_PERMISSIONS[0])
+        binding.apply {
+            btnCameraAdd.setOnClickListener { takePhoto() }
+            btnGalleryAdd.setOnClickListener { accesGallery() }
+            btnUpload.setOnClickListener { imageUpload() }
+            addLocation.setOnClickListener { userLocationSet()}
         }
 
-        view()
-        viewModel()
-    }
-
-    override fun onDestroy() {
-        super.onDestroy()
-        binding = null
-    }
-
-    private fun view(){
-        with(getBinding){
-            btnCameraAdd.setOnClickListener(this@StoryAddActivity)
-            btnGalleryAdd.setOnClickListener(this@StoryAddActivity)
-            btnUpload.setOnClickListener(this@StoryAddActivity)
-            btnUploadGuest.setOnClickListener(this@StoryAddActivity)
-            imgStory.setOnClickListener(this@StoryAddActivity)
+        if(!accPermission()){
+            ActivityCompat.requestPermissions(this, permission_req, code_permissions_req)
         }
     }
-
-    private fun viewModel() {
-        val preferences = UserPreferences.getInstances(dataStore)
-        viewModelAddStory =
-            ViewModelProvider(this, ViewModelFactory(preferences))[StoryAddViewModel::class.java]
-
-        viewModelAddStory.uploadInfo.observe(this) {
-            when (it) {
-                is Resource.forSucces -> {
-                    Toast.makeText(this, it.data, Toast.LENGTH_SHORT).show()
-                    finish()
-                    loading(false)
-                }
-                is Resource.Loading -> loading(true)
-                is Resource.forError -> {
-                    Toast.makeText(this, it.message, Toast.LENGTH_SHORT).show()
-                    loading(false)
-                }
-            }
-        }
-    }
-
-    override fun onClick(p0: View?) {
-        when(p0){
-            getBinding.imgStory -> {
-                zoomImage = !zoomImage
-                getBinding.imgStory.scaleType = if(zoomImage) ImageView.ScaleType.CENTER_CROP else ImageView.ScaleType.FIT_CENTER
-            }
-            getBinding.btnCameraAdd -> cameraX()
-            getBinding.btnGalleryAdd -> gallery()
-            getBinding.btnUpload -> imageUpload(asGuest = false)
-            getBinding.btnUploadGuest -> imageUpload(asGuest = true)
-        }
-    }
-
-    override fun onOptionsItemSelected(item: MenuItem): Boolean {
-        return when(item.itemId){
-            android.R.id.home -> {
-                onBackPressed()
-                true
-            }
-            else -> true
-        }
-    }
-
     override fun onRequestPermissionsResult(
         requestCode: Int,
         permissions: Array<out String>,
         grantResults: IntArray
     ) {
         super.onRequestPermissionsResult(requestCode, permissions, grantResults)
-        if(requestCode == REQUEST_CODE_PERMISSIONS){
-            if(!allPermissionsGranted()){
-                Toast.makeText(this, resources.getString(R.string.request_denied), Toast.LENGTH_SHORT).show()
+        if(requestCode == code_permissions_req){
+            if(!accPermission()){
+                Toast.makeText(this, "Permissions is not accessed", Toast.LENGTH_SHORT).show()
                 finish()
             }
         }
     }
+    private fun imageUpload(){
+        when{
+            binding.editDesc.text.toString().isEmpty() -> {
+                Toast.makeText(this, "Add Description Before Please!", Toast.LENGTH_SHORT).show()
+            }
+            file != null -> {
+                val token = "${UserPreferences(this).userGet().token}"
+                val getFile = reduceImageSize(file as File)
+                val descr = binding.editDesc.text.toString()
+                    .toRequestBody("application/json;charset=utf-8".toMediaType())
+                val reqImg = getFile.asRequestBody("image/*".toMediaTypeOrNull())
+                val imgMltPart = MultipartBody.Part.createFormData("photo",getFile.name, reqImg)
+                var lati: RequestBody? = null
+                var longi: RequestBody? = null
+                if(loct != null){
+                    lati = loct!!.latitude.toString()
+                        .toRequestBody("application/json;charset=utf-8".toMediaType())
+                    longi = loct!!.longitude.toString()
+                        .toRequestBody("application/json;charset=utf-8".toMediaType())
+                }
 
-    private fun allPermissionsGranted() = REQUIRED_PERMISSIONS.all {
-        ContextCompat.checkSelfPermission(baseContext, it) == PackageManager.PERMISSION_GRANTED
-    }
+                viewModel.imageUpload(imgMltPart,descr,lati,longi,token).observe(this){
+                    if (it != null){
+                        when(it){
+                           is Result.Loading -> {
+                               Toast.makeText(this, "Wait for a minute..", Toast.LENGTH_SHORT).show()
+                           }
+                           is Result.onSuccess -> {
+                               Toast.makeText(this, "Yoshhh Upload Succes!", Toast.LENGTH_SHORT).show()
+                               startActivity(Intent(this, MainActivity::class.java))
+                               finish()
+                           }
+                           is Result.onError -> {
+                               Toast.makeText(this, "Something gone wrong :(", Toast.LENGTH_SHORT).show()
+                           }
+                        }
+                    }
 
-    private val launchIntentCameraX = registerForActivityResult(
-        ActivityResultContracts.StartActivityForResult()
-    ){
-        if(it.resultCode == CAMERA_X_RESULT) {
-            val file = it.data?.getSerializableExtra("picture") as File
-            val backCam = it.data?.getBooleanExtra("isBackCamera", true) as Boolean
-            val result = rotateBit(BitmapFactory.decodeFile(file.path),backCam)
-            getBinding.imgStory.setImageBitmap(result)
-            fileGet = file
+                }
+            }
+            else -> {
+                Toast.makeText(this, "Image must be added", Toast.LENGTH_SHORT).show()
+            }
         }
     }
 
-    private val launchIntentGallery = registerForActivityResult(ActivityResultContracts.StartActivityForResult()) {
-            result ->
-        if(result.resultCode == RESULT_OK){
-            val selectImg: Uri = result.data?.data as Uri
-            val file = uriFile(selectImg, this@StoryAddActivity)
-            getBinding.imgStory.setImageURI(selectImg)
-            fileGet = file
-        }
-    }
-
-    private fun cameraX(){
-        val intent = Intent(this, CameraActivity::class.java)
-        launchIntentCameraX.launch(intent)
-    }
-
-    private fun gallery(){
-        val intent = Intent()
-        intent.action = Intent.ACTION_GET_CONTENT
+    private fun accesGallery(){
+        val intent = Intent(Intent.ACTION_PICK)
         intent.type = "image/*"
-        val choose = Intent.createChooser(intent, "pilih gambar")
-        launchIntentGallery.launch(choose)
+        val chooser = Intent.createChooser(intent, "Select your Image please!")
+        galleryAccesLaunch.launch(chooser)
     }
 
-    private fun imageUpload(asGuest: Boolean){
-        if(fileGet!=null){
-            val file = reduceImageSize(fileGet as File)
-            val desc =
-                getBinding.editDesc.text.toString()
-                    .toRequestBody("text/plain".toMediaType())
-            val requestImage = file.asRequestBody("image/jpeg".toMediaTypeOrNull())
-            val imageMulti: MultipartBody.Part = MultipartBody.Part.createFormData("photo", file.name, requestImage)
-            CoroutineScope(Dispatchers.IO).launch {
-                viewModelAddStory.forUpload(imageMulti, desc, asGuest) }
-        }else{
-            Toast.makeText(this, resources.getString(R.string.picture_firs), Toast.LENGTH_SHORT).show()
+    private fun takePhoto(){
+        val intent = Intent(MediaStore.ACTION_IMAGE_CAPTURE)
+        intent.resolveActivity(packageManager)
+
+        createTemp(application).also {
+            val uriImg: Uri = FileProvider.getUriForFile(this, "com.example.storyapp", it)
+            photoPath = it.absolutePath
+            intent.putExtra(MediaStore.EXTRA_OUTPUT, uriImg)
+            cameraLaunchAccessed.launch(intent)
         }
     }
 
-    private fun loading(state: Boolean) {
-        //
+
+    private fun userLocationSet(){
+        if(ContextCompat.checkSelfPermission(
+                this.applicationContext,
+                Manifest.permission.ACCESS_COARSE_LOCATION
+            )== PackageManager.PERMISSION_GRANTED){
+            fusedLocationProviderClient.lastLocation.addOnSuccessListener {
+                if(it != null){
+                    loct = it
+                }else{
+                    Toast.makeText(this, "Failed get Location", Toast.LENGTH_SHORT).show()
+                    binding.addLocation.isClickable = false
+                }
+            }
+        }else{
+            permissionLauncherReq.launch(arrayOf(Manifest.permission.ACCESS_COARSE_LOCATION))
+        }
     }
+
+    private fun accPermission() = permission_req.all {
+        ContextCompat.checkSelfPermission(
+            baseContext, it
+        ) == PackageManager.PERMISSION_GRANTED
+    }
+
+    private val cameraLaunchAccessed  =
+        registerForActivityResult(ActivityResultContracts.StartActivityForResult()){
+            if(it.resultCode == RESULT_OK) {
+                val getFile = File(photoPath)
+                file = getFile
+
+                val result = BitmapFactory.decodeFile(file?.absolutePath)
+                binding.imgStory.setImageBitmap(result)
+            }
+        }
+
+    private val permissionLauncherReq =
+        registerForActivityResult(ActivityResultContracts.RequestMultiplePermissions()){per ->
+            if(per[Manifest.permission.ACCESS_COARSE_LOCATION] == true){
+                userLocationSet()
+            }else{
+                Toast.makeText(this, "Permission Denied", Toast.LENGTH_SHORT).show()
+                binding.addLocation.isClickable = false
+            }
+        }
+
+    private val galleryAccesLaunch = registerForActivityResult(ActivityResultContracts.StartActivityForResult()){ result ->
+        if(result.resultCode == RESULT_OK){
+            val imgSelect: Uri = result.data?.data as Uri
+            val getFile = uriFile(imgSelect, this)
+            file = getFile
+            binding.imgStory.setImageURI(imgSelect)
+        }
+    }
+
+
+    companion object{
+        private val permission_req = arrayOf(Manifest.permission.CAMERA)
+        private const val code_permissions_req = 100
+    }
+
 }

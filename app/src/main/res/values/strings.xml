@@ -1,6 +1,7 @@
 <resources>
+    <string name="address_app">com.example.storyapp.ui</string>
     <string name="app_name">StoryApp</string>
-    <string name="settings">Settings</string>
+    <string name="logout">Logout</string>
     <string name="mail_hint">Email</string>
     <string name="hint_string">Password</string>
     <string name="password_msg_empty">Password tidak  boleh kosong</string>
@@ -18,4 +19,8 @@
     <string name="picture_firs">Masukkan gambar dulu</string>
     <string name="title_activity_maps">MapsActivity</string>
     <string name="location">Location Activity</string>
+    <!-- TODO: Remove or change this placeholder text -->
+    <string name="hello_blank_fragment">Hello blank fragment</string>
+    <string name="story_activity">Story Activity</string>
+    <string name="Maps_activity">Maps Activity</string>
 </resources>

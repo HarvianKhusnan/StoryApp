@@ -5,62 +5,39 @@ import android.os.Bundle
 import android.view.MenuItem
 import android.view.View
 import android.widget.ImageView
+import com.bumptech.glide.Glide
 import com.example.storyapp.R
 import com.example.storyapp.databinding.ActivityDetailBinding
 import com.example.storyapp.response.Story
 import com.example.storyapp.utils.loadImage
 
-class DetailActivity : AppCompatActivity(), View.OnClickListener {
-    private var binding: ActivityDetailBinding? = null
-    private val getBinding get() = binding!!
-    private var zoomImage = true
+class DetailActivity : AppCompatActivity() {
 
-    companion object {
-        const val STORY_EXTRA ="extra_story"
-    }
+    private lateinit var binding: ActivityDetailBinding
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         binding = ActivityDetailBinding.inflate(layoutInflater)
-        setContentView(getBinding.root)
+        setContentView(binding.root)
 
-        supportActionBar?.setDisplayHomeAsUpEnabled(true)
-        supportActionBar?.title = "Detail Story"
+        val name = intent.getStringExtra(NAME)
+        val description = intent.getStringExtra(DESC)
+        val img = intent.getStringExtra(PHOTO_URL)
 
-        val story = intent.getParcelableExtra<Story>(STORY_EXTRA)
-        view(story)
-    }
+        Glide.with(this)
+            .load(img)
+            .into(binding.storyDetail)
 
-    private fun view(story: Story?){
-        with(getBinding){
-            storyDetail.loadImage(story?.photoUrl)
-            storyTitle.text = story?.name
-            detailDesc.text= story?.descript
-
-            storyDetail.setOnClickListener(this@DetailActivity)
+        binding.apply {
+            storyTitle.text = name
+            detailDesc.text = description
         }
     }
 
-    override fun onDestroy() {
-        super.onDestroy()
-        binding = null
+    companion object{
+        const val NAME = "name"
+        const val DESC = "description"
+        const val PHOTO_URL = "photo_url"
     }
 
-    override fun onOptionsItemSelected(item: MenuItem): Boolean {
-        return when(item.itemId){
-            android.R.id.home -> {
-                onBackPressed()
-                true
-            }
-            else -> true
-        }
-    }
-
-    override fun onClick(p0: View?) {
-        when(p0){
-            getBinding.storyDetail -> {
-                zoomImage = !zoomImage
-                getBinding.storyDetail.scaleType = if (zoomImage) ImageView.ScaleType.CENTER_CROP else ImageView.ScaleType.FIT_CENTER
-            }
-        }
-    }
 }

@@ -5,9 +5,9 @@ import com.google.gson.annotations.SerializedName
 
 data class StoryResponse (
     @SerializedName("error")
-    val error: Boolean?,
+    val error: Boolean,
     @SerializedName("message")
     val message: String?,
     @SerializedName("listStory")
-    val storyList: List<Story>,
+    val storyList: List<Story>
 )
